@@ -233,28 +233,26 @@ Sin logo. El título va en texto: **"AI Quiz · Workshop DT DS León"**, en tipo
 
 ---
 
-## 9. Contenido de las preguntas
+## 9. Banco de preguntas (diagnóstico de IA)
 
-Archivo: `src/data/questions.ts` (solo servidor, nunca se importa en componentes de cliente).
+Archivo: [`src/data/questions.ts`](src/data/questions.ts) (solo servidor; usa `import "server-only"` para que nunca se incluya en el bundle del cliente).
 
-```ts
-export const QUESTIONS: Question[] = [
-  {
-    id: 1,
-    level: "Basic",               // Basic | Intermediate | Advanced (se muestra como etiqueta)
-    type: "multiple",             // "multiple" (4 opciones) | "truefalse" (2 opciones: True/False)
-    text: "What does 'LLM' stand for?",
-    options: ["Large Language Model", "Linear Logic Machine", "Low Latency Memory", "Learned Logic Module"],
-    correct: 0,
-    timeLimitSec: 20,
-    explanation: "LLMs are neural networks trained on large text corpora…", // 1–2 frases, se muestra en el reveal
-    image: undefined,             // opcional
-  },
-  // … 10 en total
-];
-```
+Están pensadas para **diagnosticar** al equipo: la dificultad sube de forma progresiva y cada pregunta mide un concepto distinto. Así, el % de aciertos por nivel y por tema indica dónde está el equipo y qué conviene reforzar. Hay 8 de opción múltiple y 2 de verdadero/falso. La respuesta correcta cambia de posición para que no haya patrón, y los distractores tienen una longitud parecida a la correcta.
 
-**Pendiente de tu parte:** enviar las 10 preguntas (texto, tipo, opciones, respuesta correcta y una explicación de 1–2 frases). Si no traen explicación, la redacto yo y tú la revisas.
+| # | Nivel | Tema | Tipo | Concepto evaluado | Respuesta correcta |
+|---|---|---|---|---|---|
+| 1 | Basic | AI Fundamentals | MC | Relación IA ⊃ ML ⊃ DL | Deep Learning is part of ML, which is part of AI |
+| 2 | Basic | How LLMs Work | T/F | Un LLM genera texto, no consulta una base de datos | **False** |
+| 3 | Basic | Responsible Use | MC | Alucinación | A confident answer that is false or made up |
+| 4 | Intermediate | How LLMs Work | MC | Token | A chunk of text, such as a word or part of a word |
+| 5 | Intermediate | Prompting | MC | Few-shot prompting | Including a few examples of input/output in the prompt |
+| 6 | Intermediate | How LLMs Work | T/F | Temperatura | **True** |
+| 7 | Intermediate | Building with AI | MC | Embeddings | Vectors that represent the meaning of text |
+| 8 | Advanced | Building with AI | MC (caso práctico) | RAG vs fine-tuning | RAG: retrieve relevant sections and add them to the prompt |
+| 9 | Advanced | Agents | MC | Agente vs chatbot (herramientas, ciclo, MCP) | Plans steps and uses tools in a loop to reach a goal |
+| 10 | Advanced | Architecture | MC | Transformer / self-attention | Self-attention |
+
+Cada pregunta trae una explicación de 1–2 frases que se muestra en el reveal. **Revísalas antes del evento:** si quieres cambiar alguna pregunta, basta con editar ese archivo.
 
 ## 9b. Exportar CSV
 
@@ -268,6 +266,21 @@ rank,name,avatar,score,correct,total_time_s,q1_choice,q1_correct,q1_points,…,q
 Opcional: una segunda pestaña o archivo con estadísticas por pregunta (% de aciertos y tiempo promedio), útil para ver qué conceptos costaron más.
 
 ---
+
+## 9c. Diagnóstico del equipo ("Team AI Snapshot")
+
+El objetivo es medir el nivel del equipo, así que al terminar cada sesión hay una pantalla extra para el host, accesible desde el podio con **Team snapshot**:
+
+- **% de aciertos por nivel:** Basic / Intermediate / Advanced, en barras.
+- **% de aciertos por tema:** Fundamentals, How LLMs Work, Prompting, Building with AI, Agents, Architecture y Responsible Use.
+- **Pregunta más difícil y más fácil**, con su tiempo promedio de respuesta.
+- **Perfil global del equipo** según el % total de aciertos:
+  - < 40 % → *AI Curious*: conviene reforzar los fundamentos.
+  - 40–70 % → *AI Practitioner*: buen uso; siguiente paso: prompting avanzado y RAG.
+  - > 70 % → *AI Builder*: listos para agentes y para construir soluciones.
+- Las mismas métricas se incluyen en el CSV (archivo `…_summary.csv`) para comparar entre sesiones y grupos.
+
+Esta pantalla muestra solo datos agregados, nunca individuales, así que se puede proyectar sin exponer a nadie.
 
 ## 10. Robustez para un evento en vivo
 
@@ -327,7 +340,7 @@ NEXT_PUBLIC_SITE_URL          # para el QR, ej. https://ai-quiz-leon.vercel.app
 | 2 | **Host y lobby** | Login, crear juego, código, QR, los jugadores se unen con nombre y avatar y aparecen en vivo |
 | 3 | **Ciclo de preguntas** | Máquina de estados, temporizador del servidor, botones de respuesta, puntuación, cierre automático |
 | 4 | **Estadísticas** | Gráfico de distribución, feedback en el teléfono, leaderboard animado con cambios de posición |
-| 5 | **Podio** | Revelación del 3º→1º, confeti, ranking completo, resumen final en cada teléfono |
+| 5 | **Podio y diagnóstico** | Revelación del 3º→1º, confeti, ranking completo, resumen en cada teléfono, Team snapshot, exportación CSV |
 | 6 | **Pulido** | Reconexión, wake lock, sonidos, atajos, branding del workshop, accesibilidad |
 | 7 | **Pruebas** | Pruebas unitarias de la puntuación; script de carga con 60 bots simulados; ensayo completo en teléfonos reales iOS/Android |
 
@@ -347,4 +360,4 @@ NEXT_PUBLIC_SITE_URL          # para el QR, ej. https://ai-quiz-leon.vercel.app
 | 6 | Dominio | `*.vercel.app` |
 | 7 | Sesiones | Varias, con reinicio |
 
-**Único pendiente:** el contenido de las 10 preguntas.
+**Preguntas:** redactadas (sección 9); pendiente tu revisión.
