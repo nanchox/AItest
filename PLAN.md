@@ -18,6 +18,13 @@ Aplicación web en tiempo real estilo Kahoot para un test de 10 preguntas sobre 
 | Acceso del host | **Contraseña de administrador** (variable de entorno). Al entrar se genera un código aleatorio de 5 caracteres alfanuméricos |
 | Vista en el teléfono | **Colores + forma + texto de la respuesta**. La pregunta completa se ve en la pantalla principal |
 | Tiempo por pregunta | 20 segundos |
+| Tipos de pregunta | Opción múltiple (4 opciones) **y** verdadero/falso (2 opciones) |
+| Explicación | Se muestra una explicación breve de la respuesta correcta en cada reveal |
+| Branding | Sin logo, solo texto. Paleta `#500A78` → `#8C41DE` → `#C8A5FF` → `#1DB44C` (ver sección 8b) |
+| Leaderboard | **Cada 2 preguntas** (después de la 2, 4, 6 y 8; tras la 10 va directo al podio) |
+| Exportar | CSV con los resultados, disponible al terminar (y en el historial) |
+| Sesiones | **Varias sesiones**, cada una con su propio código; se pueden **reiniciar** |
+| Dominio | `*.vercel.app` |
 
 ---
 
@@ -69,20 +76,23 @@ Aplicación web en tiempo real estilo Kahoot para un test de 10 preguntas sobre 
 lobby ──Start──▶ question ──Open answers──▶ answering ──(20s o todos respondieron)──▶ reveal
                      ▲                                                                   │
                      │                                                                   ▼
-                     └──────────────────Next question────────────────────────── leaderboard
-                                                                                         │
-                                                                    (tras la pregunta 10)▼
-                                                                                      podium
+                     ├──────────Next question (preguntas impares: 1,3,5,7,9)──────────────┤
+                     │                                                                   ▼
+                     └──────────Next question (tras la 2,4,6,8)──────────────── leaderboard
+                                                                                         
+                                                       reveal de la pregunta 10 ──▶ podium
 ```
+
+**Leaderboard cada 2 preguntas:** después de las preguntas 1, 3, 5, 7 y 9 el host pasa del `reveal` directamente a la siguiente pregunta. Después de las 2, 4, 6 y 8 se muestra el `leaderboard`. Tras la 10 se pasa directo al podio. Igual, el teléfono de cada jugador muestra su posición en todos los reveals. La frecuencia es configurable (`LEADERBOARD_EVERY = 2`).
 
 | Fase | Pantalla del host | Teléfono |
 |---|---|---|
 | `lobby` | QR grande + código + URL; los jugadores aparecen con su avatar al unirse; contador; botón **Start** | "You're in! Waiting for the host…" con su avatar |
 | `question` | "Question 3 of 10", texto de la pregunta (tú la lees en voz alta); botón **Open answers** | "Get ready…" + número de pregunta |
-| `answering` | Pregunta + 4 opciones de colores + cuenta regresiva de 20 s + "12/30 answered" | 4 botones (▲ rojo, ◆ azul, ● amarillo, ■ verde) con el texto. Tras tocar: "Answer locked in!" |
-| `reveal` | Respuesta correcta resaltada + gráfico de barras con cuántos eligieron cada opción | ✅ "Correct! +873" / ❌ "Wrong" + racha + posición actual ("You're 4th") |
+| `answering` | Pregunta + opciones de colores + cuenta regresiva de 20 s + "12/30 answered" | 4 botones (▲ ◆ ● ■) o 2 en verdadero/falso (✓ True / ✗ False), con su texto. Tras tocar: "Answer locked in!" |
+| `reveal` | Respuesta correcta resaltada + gráfico de barras con cuántos eligieron cada opción + **explicación** ("Why?") | ✅ "Correct! +873" / ❌ "Wrong" + racha + posición actual ("You're 4th") + explicación breve |
 | `leaderboard` | Top 5 con barras animadas que se reordenan + ↑↓ cambios de posición; botón **Next question** | "You're in 4th place — 2,340 pts, 120 behind Fox 🦊" |
-| `podium` | Revelación animada del 3º → 2º → 1º con confeti; botón **Show full ranking** | Posición final, puntos totales, aciertos (ej. 7/10) |
+| `podium` | Revelación animada del 3º → 2º → 1º con confeti; botones **Show full ranking**, **Export CSV**, **Restart** y **New session** | Posición final, puntos totales, aciertos (ej. 7/10) |
 
 **Cierre automático:** si todos los jugadores conectados ya respondieron, el temporizador termina antes (configurable). El host también puede saltar con **Skip timer**.
 
@@ -110,7 +120,11 @@ bono de racha (opcional): +100 por cada respuesta correcta consecutiva desde la 
 create table games (
   id uuid primary key default gen_random_uuid(),
   code char(5) unique not null,            -- ej. 'K7P2X' (sin 0/O/1/I para evitar confusiones)
+  title text,                              -- etiqueta opcional, ej. 'Group A – Morning'
   phase text not null default 'lobby',     -- lobby|question|answering|reveal|leaderboard|podium
+  status text not null default 'active',   -- active|finished|archived
+  round int not null default 1,            -- se incrementa en cada reinicio
+  finished_at timestamptz,
   current_q int not null default -1,       -- índice 0..9
   question_started_at timestamptz,
   question_ends_at timestamptz,
@@ -134,15 +148,25 @@ create table answers (
   id uuid primary key default gen_random_uuid(),
   game_id uuid references games(id) on delete cascade,
   player_id uuid references players(id) on delete cascade,
+  round int not null default 1,
   question_index int not null,
-  choice int not null,                     -- 0..3
+  choice int not null,                     -- 0..3 (0..1 en verdadero/falso)
   is_correct boolean not null,
   elapsed_ms int not null,
   points int not null,
   created_at timestamptz default now(),
-  unique (player_id, question_index)
+  unique (player_id, round, question_index)
 );
 ```
+
+### Varias sesiones y reinicio
+- **Varias sesiones:** cada juego es una fila en `games` con su propio código. Se pueden tener varias abiertas (por ejemplo, Grupo A y Grupo B) sin que se mezclen.
+- **Historial del host (`/host`):** lista de sesiones con código, título, fecha, número de jugadores, estado y ganador. Acciones disponibles: **Open**, **Export CSV**, **Restart** y **Archive**.
+- **Restart** (dos modos):
+  - *Same players:* conserva a los jugadores y el código, reinicia sus puntos a 0, incrementa `round` y vuelve al `lobby`. Los teléfonos regresan solos a "Waiting for the host…".
+  - *Fresh lobby:* conserva el código, borra a los jugadores y vuelve al `lobby` vacío.
+  - Las respuestas de rondas anteriores se conservan (por `round`), así que los CSV previos se pueden seguir descargando.
+- **New session:** crea un juego nuevo con otro código.
 
 **RLS:** `games` y `players` permiten SELECT público (sin datos sensibles) para que Realtime funcione con la anon key. `answers` **no** tiene acceso público (evita trampas). El host obtiene los conteos por una ruta API protegida (polling cada ~1 s durante `answering`). Ninguna tabla permite escrituras desde el cliente.
 
@@ -168,6 +192,10 @@ create table answers (
 | POST | `/api/host/games/[code]/advance` | Avanza la fase (start / open / reveal / leaderboard / next / podium) |
 | GET | `/api/host/games/[code]/stats` | Conteo de respuestas, distribución por opción, top 5 |
 | POST | `/api/host/games/[code]/kick` | Expulsa un jugador (nombres inapropiados) |
+| GET | `/api/host/games` | Historial de sesiones |
+| POST | `/api/host/games/[code]/restart` | `{mode: "same_players" \| "fresh"}` |
+| POST | `/api/host/games/[code]/archive` | Oculta la sesión del historial |
+| GET | `/api/host/games/[code]/export?round=N` | Descarga el CSV |
 | POST | `/api/join` | `{code, name, avatar}` → `{playerId, token}` (se guarda en localStorage) |
 | POST | `/api/answer` | `{playerId, token, questionIndex, choice}` → se valida la ventana de tiempo y se puntúa |
 | GET | `/api/game/[code]/question` | Pregunta actual **sin** la respuesta correcta (solo en `answering`) |
@@ -184,6 +212,27 @@ Se pueden repetir; el nombre identifica a cada jugador. MVP con emoji, que es lo
 
 ---
 
+## 8b. Identidad visual
+
+Sin logo. El título va en texto: **"AI Quiz · Workshop DT DS León"**, en tipografía bold geométrica (Poppins o Montserrat).
+
+| Token | Color | Uso |
+|---|---|---|
+| `brand-900` | `#500A78` | Fondo base (degradado oscuro), encabezados |
+| `brand-600` | `#8C41DE` | Botones principales, barras del ranking, acentos |
+| `brand-200` | `#C8A5FF` | Texto secundario, bordes, código del juego, brillos |
+| `success` | `#1DB44C` | Respuesta correcta, "+puntos", indicador de racha |
+
+- **Fondo:** degradado `#500A78 → #8C41DE` con textura sutil de "red neuronal" (puntos y líneas en `#C8A5FF` al 10 % de opacidad).
+- **Botones de respuesta:** necesitan 4 colores bien distinguibles (además de la forma). Propuesta armónica con la paleta, dejando el verde reservado para "correcto":
+  ▲ `#E5484D` coral · ◆ `#3B82F6` azul · ● `#F5A524` ámbar · ■ `#8C41DE` morado.
+  Verdadero/falso: ✓ True `#3B82F6` · ✗ False `#E5484D`.
+- **Reveal:** la opción correcta se rodea en `#1DB44C` con ✓; las demás se atenúan al 35 %.
+- **Podio:** 1º dorado, 2º plateado, 3º bronce, sobre bases en `#8C41DE`/`#500A78`; confeti con los 4 colores de la paleta.
+- Los textos sobre los colores se validan con un contraste mínimo de 4.5:1 (AA).
+
+---
+
 ## 9. Contenido de las preguntas
 
 Archivo: `src/data/questions.ts` (solo servidor, nunca se importa en componentes de cliente).
@@ -193,18 +242,30 @@ export const QUESTIONS: Question[] = [
   {
     id: 1,
     level: "Basic",               // Basic | Intermediate | Advanced (se muestra como etiqueta)
+    type: "multiple",             // "multiple" (4 opciones) | "truefalse" (2 opciones: True/False)
     text: "What does 'LLM' stand for?",
     options: ["Large Language Model", "Linear Logic Machine", "Low Latency Memory", "Learned Logic Module"],
     correct: 0,
     timeLimitSec: 20,
-    explanation: "LLMs are neural networks trained on large text corpora…", // opcional, se muestra en el reveal
+    explanation: "LLMs are neural networks trained on large text corpora…", // 1–2 frases, se muestra en el reveal
     image: undefined,             // opcional
   },
   // … 10 en total
 ];
 ```
 
-**Pendiente de tu parte:** enviar las 10 preguntas (texto, 4 opciones, respuesta correcta y, si quieres, una explicación breve).
+**Pendiente de tu parte:** enviar las 10 preguntas (texto, tipo, opciones, respuesta correcta y una explicación de 1–2 frases). Si no traen explicación, la redacto yo y tú la revisas.
+
+## 9b. Exportar CSV
+
+Botón en el podio y en el historial. Archivo `ai-quiz_<CODE>_round<N>_<YYYY-MM-DD>.csv`, en UTF-8 con BOM para que Excel muestre bien los acentos:
+
+```
+rank,name,avatar,score,correct,total_time_s,q1_choice,q1_correct,q1_points,…,q10_choice,q10_correct,q10_points
+1,Ana,fox,8420,9,61.3,A,TRUE,962,…
+```
+
+Opcional: una segunda pestaña o archivo con estadísticas por pregunta (% de aciertos y tiempo promedio), útil para ver qué conceptos costaron más.
 
 ---
 
@@ -274,12 +335,16 @@ NEXT_PUBLIC_SITE_URL          # para el QR, ej. https://ai-quiz-leon.vercel.app
 
 ---
 
-## 13. Preguntas pendientes
+## 13. Estado de las decisiones
 
-1. **Las 10 preguntas:** ¿me las compartes (texto, 4 opciones, correcta)? ¿Hay alguna de verdadero/falso (2 opciones)?
-2. **¿Mostrar una explicación** de la respuesta correcta en el reveal? Es bueno para aprender, pero alarga la sesión.
-3. **Branding:** ¿logo y colores del Workshop DT DS León? Si no hay, uso una paleta morada y oscura, estilo "AI".
-4. **¿Leaderboard después de cada pregunta**, o solo cada 2–3 preguntas para ir más rápido?
-5. **¿Exportar resultados** (CSV con nombres, puntos y aciertos) al final? Sale casi gratis.
-6. **Dominio:** ¿basta con `*.vercel.app` o usarás un dominio propio?
-7. **¿Reutilizar el juego?** ¿Necesitas poder reiniciar o crear varias sesiones (ej. dos grupos), o es una sola vez?
+| # | Pregunta | Respuesta |
+|---|---|---|
+| 1 | ¿Hay preguntas de verdadero/falso? | Sí → soporte para 2 y 4 opciones |
+| 2 | ¿Explicación en el reveal? | Sí |
+| 3 | Branding | Sin logo; paleta `#500A78` `#8C41DE` `#C8A5FF` `#1DB44C` |
+| 4 | Frecuencia del leaderboard | Cada 2 preguntas |
+| 5 | Exportar resultados | Sí, CSV |
+| 6 | Dominio | `*.vercel.app` |
+| 7 | Sesiones | Varias, con reinicio |
+
+**Único pendiente:** el contenido de las 10 preguntas.
