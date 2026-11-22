@@ -1,0 +1,42 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-900: #500a78;
+  --color-brand-800: #3d0860;
+  --color-brand-950: #2a0545;
+  --color-brand-600: #8c41de;
+  --color-brand-200: #c8a5ff;
+  --color-success: #1db44c;
+  --color-ans-red: #d6333a;
+  --color-ans-blue: #2563eb;
+  --color-ans-amber: #f5a524;
+  --color-ans-purple: #8c41de;
+  --font-sans: ui-rounded, "SF Pro Rounded", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --animate-pop: pop 0.35s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+  --animate-rise: rise 0.5s ease-out both;
+  --animate-float: float 4s ease-in-out infinite;
+  --animate-tick: tick 1s ease-in-out infinite;
+}
+
+@keyframes pop { 0% { transform: scale(0.6); opacity: 0 } 100% { transform: scale(1); opacity: 1 } }
+@keyframes rise { 0% { transform: translateY(24px); opacity: 0 } 100% { transform: translateY(0); opacity: 1 } }
+@keyframes float { 0%, 100% { transform: translateY(0) } 50% { transform: translateY(-8px) } }
+@keyframes tick { 0%, 100% { transform: scale(1) } 50% { transform: scale(1.12) } }
+
+html, body { min-height: 100%; }
+body {
+  color: #fff;
+  background-color: var(--color-brand-900);
+  background-image:
+    radial-gradient(circle at 20% 15%, rgba(200, 165, 255, 0.18) 0, transparent 40%),
+    radial-gradient(circle at 85% 90%, rgba(29, 180, 76, 0.10) 0, transparent 35%),
+    radial-gradient(rgba(200, 165, 255, 0.14) 1.5px, transparent 1.5px),
+    linear-gradient(160deg, #500a78 0%, #6a22a8 55%, #8c41de 130%);
+  background-size: auto, auto, 34px 34px, auto;
+  background-attachment: fixed;
+  -webkit-tap-highlight-color: transparent;
+}
+button { cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: not-allowed; }
+:focus-visible { outline: 3px solid var(--color-brand-200); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }

@@ -1,4 +1,6 @@
 # AI Quiz Live — Plan de implementación
+
+> **Estado:** implementado (fases 1–5 y el núcleo de la 6). Ver [README](README.md) para ejecutar y publicar. Diferencias respecto al plan: los sonidos y el filtro de groserías avanzado quedaron fuera; el QR abre `/?code=XXXXX` y salta directo al formulario de nombre; los colores de los botones se oscurecieron un poco para cumplir contraste AA; las respuestas ya no se guardan como puntaje en `players`, se calculan desde `answers`; el tiempo real usa *Broadcast* de Supabase (sin exponer tablas al navegador).
 **Evento:** Workshop DT DS León · **Idioma de la app:** inglés · **Deploy:** Vercel + Supabase
 
 ---
