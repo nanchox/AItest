@@ -47,3 +47,14 @@ Edit [`src/data/questions.ts`](src/data/questions.ts): `type` is `"multiple"` (4
 
 - *A player closed the tab and can't rejoin with the same name:* remove them from the lobby (hover → ×) or ask them to use another name.
 - *Join blocked ("already in progress"):* players can join in the lobby and during question 1. Use **Restart** to open a new round.
+
+## Sharing a Supabase project with other apps
+
+The quiz only touches its own tables (`games`, `players`, `answers`), but its `SUPABASE_SERVICE_ROLE_KEY` can read everything in
+that Supabase project. If the project also holds other apps' data, remove the quiz when the event is over:
+
+```sql
+drop table if exists answers, players, games;
+```
+
+then rotate the service-role key (Supabase → Project Settings → API) and delete the Vercel project's variables.
