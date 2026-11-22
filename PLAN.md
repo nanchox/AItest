@@ -237,20 +237,20 @@ Sin logo. El título va en texto: **"AI Quiz · Workshop DT DS León"**, en tipo
 
 Archivo: [`src/data/questions.ts`](src/data/questions.ts) (solo servidor; usa `import "server-only"` para que nunca se incluya en el bundle del cliente).
 
-Están pensadas para **diagnosticar** al equipo: la dificultad sube de forma progresiva y cada pregunta mide un concepto distinto. Así, el % de aciertos por nivel y por tema indica dónde está el equipo y qué conviene reforzar. Hay 8 de opción múltiple y 2 de verdadero/falso. La respuesta correcta cambia de posición para que no haya patrón, y los distractores tienen una longitud parecida a la correcta.
+Están pensadas para **diagnosticar** al equipo, con foco en **usuarios de IA (no desarrolladores)**: la dificultad sube de forma progresiva y cada pregunta mide un concepto distinto. Así, el % de aciertos por nivel y por tema indica dónde está el equipo y qué conviene reforzar. Hay 8 de opción múltiple y 2 de verdadero/falso. La respuesta correcta cambia de posición para que no haya patrón, y los distractores tienen una longitud parecida a la correcta.
 
 | # | Nivel | Tema | Tipo | Concepto evaluado | Respuesta correcta |
 |---|---|---|---|---|---|
-| 1 | Basic | AI Fundamentals | MC | Relación IA ⊃ ML ⊃ DL | Deep Learning is part of ML, which is part of AI |
+| 1 | Basic | Prompting | MC | Cómo escribir un buen prompt (contexto, objetivo, formato) | Write a short, friendly email to a client explaining a 2-day delay… |
 | 2 | Basic | How LLMs Work | T/F | Un LLM genera texto, no consulta una base de datos | **False** |
 | 3 | Basic | Responsible Use | MC | Alucinación | A confident answer that is false or made up |
 | 4 | Intermediate | How LLMs Work | MC | Token | A chunk of text, such as a word or part of a word |
-| 5 | Intermediate | Prompting | MC | Few-shot prompting | Including a few examples of input/output in the prompt |
-| 6 | Intermediate | How LLMs Work | T/F | Temperatura | **True** |
+| 5 | Intermediate | Data Privacy | MC | Datos personales y herramientas aprobadas | Make sure the tool is approved and remove/anonymize personal data |
+| 6 | Intermediate | How LLMs Work | T/F | Fecha de corte del conocimiento (knowledge cutoff) | **True** |
 | 7 | Intermediate | Building with AI | MC | Embeddings | Vectors that represent the meaning of text |
 | 8 | Advanced | Building with AI | MC (caso práctico) | RAG vs fine-tuning | RAG: retrieve relevant sections and add them to the prompt |
 | 9 | Advanced | Agents | MC | Agente vs chatbot (herramientas, ciclo, MCP) | Plans steps and uses tools in a loop to reach a goal |
-| 10 | Advanced | Architecture | MC | Transformer / self-attention | Self-attention |
+| 10 | Advanced | Security | MC (caso práctico) | Prompt injection al usar asistentes con acceso a web, archivos o herramientas | Prompt injection |
 
 Cada pregunta trae una explicación de 1–2 frases que se muestra en el reveal. **Revísalas antes del evento:** si quieres cambiar alguna pregunta, basta con editar ese archivo.
 
@@ -272,7 +272,7 @@ Opcional: una segunda pestaña o archivo con estadísticas por pregunta (% de ac
 El objetivo es medir el nivel del equipo, así que al terminar cada sesión hay una pantalla extra para el host, accesible desde el podio con **Team snapshot**:
 
 - **% de aciertos por nivel:** Basic / Intermediate / Advanced, en barras.
-- **% de aciertos por tema:** Fundamentals, How LLMs Work, Prompting, Building with AI, Agents, Architecture y Responsible Use.
+- **% de aciertos por tema:** Prompting, How LLMs Work, Responsible Use, Data Privacy, Building with AI, Agents y Security.
 - **Pregunta más difícil y más fácil**, con su tiempo promedio de respuesta.
 - **Perfil global del equipo** según el % total de aciertos:
   - < 40 % → *AI Curious*: conviene reforzar los fundamentos.
