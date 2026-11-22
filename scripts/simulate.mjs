@@ -155,7 +155,7 @@ hs = await hostState();
 ok(hs.phase === "podium" && hs.standings.length === BOTS, "podium has full standings");
 ok(hs.standings[0].rank === 1 && hs.standings[0].score >= hs.standings[1].score, "winner has the highest score");
 ok(hs.snapshot && ["AI Curious", "AI Practitioner", "AI Builder"].includes(hs.snapshot.profile), `team snapshot present (${hs.snapshot?.overallPct}% → ${hs.snapshot?.profile})`);
-ok(hs.snapshot.byLevel.length === 3 && hs.snapshot.perQuestion.length === 10, "snapshot has 3 levels and 10 questions");
+ok(hs.snapshot.byLevel.length === 4 && hs.snapshot.perQuestion.length === 10, "snapshot has 4 levels (incl. Bonus) and 10 questions");
 const fin = await playerState(bots[0]);
 ok(fin.top3?.length === 3 && fin.me.correct !== undefined, "player final screen has top 3 + own stats");
 const csvRes = await call(`/api/host/games/${code}/export?round=1`, { host: true, raw: true });

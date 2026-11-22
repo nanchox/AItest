@@ -241,18 +241,22 @@ Archivo: [`src/data/questions.ts`](src/data/questions.ts) (solo servidor; usa `i
 
 Están pensadas para **diagnosticar** al equipo, con foco en **usuarios de IA (no desarrolladores)**: la dificultad sube de forma progresiva y cada pregunta mide un concepto distinto. Así, el % de aciertos por nivel y por tema indica dónde está el equipo y qué conviene reforzar. Hay 8 de opción múltiple y 2 de verdadero/falso. La respuesta correcta cambia de posición para que no haya patrón, y los distractores tienen una longitud parecida a la correcta.
 
-| # | Nivel | Tema | Tipo | Concepto evaluado | Respuesta correcta |
-|---|---|---|---|---|---|
-| 1 | Basic | Prompting | MC | Cómo escribir un buen prompt (contexto, objetivo, formato) | Write a short, friendly email to a client explaining a 2-day delay… |
-| 2 | Basic | How LLMs Work | T/F | Un LLM genera texto, no consulta una base de datos | **False** |
-| 3 | Basic | Responsible Use | MC | Alucinación | A confident answer that is false or made up |
-| 4 | Intermediate | How LLMs Work | MC | Token | A chunk of text, such as a word or part of a word |
-| 5 | Intermediate | Data Privacy | MC | Datos personales y herramientas aprobadas | Make sure the tool is approved and remove/anonymize personal data |
-| 6 | Intermediate | How LLMs Work | T/F | Fecha de corte del conocimiento (knowledge cutoff) | **True** |
-| 7 | Intermediate | Building with AI | MC | Embeddings | Vectors that represent the meaning of text |
-| 8 | Advanced | Building with AI | MC (caso práctico) | RAG vs fine-tuning | RAG: retrieve relevant sections and add them to the prompt |
-| 9 | Advanced | Agents | MC | Agente vs chatbot (herramientas, ciclo, MCP) | Plans steps and uses tools in a loop to reach a goal |
-| 10 | Advanced | Security | MC (caso práctico) | Prompt injection al usar asistentes con acceso a web, archivos o herramientas | Prompt injection |
+| # | Nivel | Tema | Concepto evaluado | Respuesta correcta (posición) |
+|---|---|---|---|---|
+| 1 | Basic | AI Fundamentals | Ejemplo de IA | A chatbot that understands natural language (C) |
+| 2 | Basic | AI Fundamentals | Machine Learning | A technique that allows systems to learn patterns from data (D) |
+| 3 | Basic | Generative AI | Qué distingue a la IA generativa | It can generate new content (A) |
+| 4 | Basic | Prompting | Qué es un prompt | An instruction or context given to an AI model (B) |
+| 5 | Intermediate | Responsible Use | Alucinación | Incorrect or fabricated information that sounds convincing (C) |
+| 6 | Intermediate | How LLMs Work | Qué es un LLM | An AI model trained to understand and generate language (A) |
+| 7 | Advanced | Building with AI | Para qué sirve RAG | Grounding AI responses with relevant external information (D) |
+| 8 | Advanced | Agents | Agente vs chatbot | Reasons about tasks, uses tools and takes actions to achieve a goal (C) |
+| 9 | Intermediate | Responsible Use | Buenas prácticas en el trabajo | Verify results, use approved tools, follow data policies (B) |
+| 10 | Bonus ⭐ | AI Mindset | Objetivo de adoptar IA | Augment our capabilities and solve real business problems (A) |
+
+Las 10 preguntas son de opción múltiple (las dos de verdadero/falso ya no están). El contenido es el que proporcionó el equipo; solo se **reordenaron las opciones** para repartir la respuesta correcta entre A, B, C y D (en la lista original 6 de 10 eran "B", y quien eligiera siempre B habría acertado el 60 %). Las explicaciones del reveal las redactó Claude.
+
+**Dos grupos:** cada grupo es una sesión independiente con su propio código (`/host` → *Group 1* / *Group 2* → Create game). Se pueden jugar uno después del otro o en paralelo, y cada uno tiene su propio podio, Team snapshot y CSV.
 
 Cada pregunta trae una explicación de 1–2 frases que se muestra en el reveal. **Revísalas antes del evento:** si quieres cambiar alguna pregunta, basta con editar ese archivo.
 

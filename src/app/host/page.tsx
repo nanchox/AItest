@@ -121,6 +121,15 @@ function Sessions({ onOpen, onLogout }: { onOpen: (code: string) => void; onLogo
           />
           <Button size="lg" onClick={create} disabled={busy}>{busy ? "Creating…" : "Create game"}</Button>
         </div>
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
+          <span className="font-bold text-brand-200">Quick labels:</span>
+          {["Group 1", "Group 2"].map((g) => (
+            <button key={g} type="button" onClick={() => setTitle(g)} className="rounded-full bg-white/15 px-3 py-1 font-bold ring-1 ring-white/30 hover:bg-white/25">
+              {g}
+            </button>
+          ))}
+          <span className="text-brand-200">Each group gets its own code, so you can run them one after the other or at the same time.</span>
+        </div>
         {error && <p role="alert" className="mt-3 font-semibold text-amber-300">{error}</p>}
       </section>
 

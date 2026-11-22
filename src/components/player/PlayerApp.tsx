@@ -143,7 +143,7 @@ function PlayerGame({
         <Screen>
           <Identity state={state} />
           <p className="text-sm font-bold uppercase tracking-widest text-brand-200">Question {state.qIndex + 1} of {state.total}</p>
-          <p className="rounded-full bg-white/15 px-4 py-1 text-sm font-bold">{state.question?.level}</p>
+          <p className="rounded-full bg-white/15 px-4 py-1 text-sm font-bold">{state.question?.level === "Bonus" ? "⭐ Bonus question" : state.question?.level}</p>
           <h1 className="text-4xl font-black">Get ready!</h1>
           <Pulse>Look at the main screen 👀</Pulse>
         </Screen>

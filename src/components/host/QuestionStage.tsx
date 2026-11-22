@@ -15,7 +15,7 @@ export function QuestionStage({ state, remainingMs }: { state: HostState; remain
     <div className="flex flex-1 flex-col gap-5">
       <div className="flex items-center gap-4">
         <span className="rounded-full bg-white/15 px-4 py-1 text-lg font-extrabold">Question {q.index + 1} of {q.total}</span>
-        <span className="rounded-full bg-brand-200 px-4 py-1 text-lg font-extrabold text-brand-900">{q.level}</span>
+        <span className="rounded-full bg-brand-200 px-4 py-1 text-lg font-extrabold text-brand-900">{q.level === "Bonus" ? "⭐ Bonus" : q.level}</span>
         <span className="text-lg font-bold text-brand-200">{q.topic}</span>
         <div className="flex-1" />
         {answering && (

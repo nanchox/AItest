@@ -278,7 +278,7 @@ export function buildSnapshot(playerCount: number, answers: Answer[]): Snapshot 
     }
     return [...m.entries()].map(([label, e]) => ({ label, pct: pct(e.c, e.n) }));
   };
-  const levelOrder = ["Basic", "Intermediate", "Advanced"];
+  const levelOrder = ["Basic", "Intermediate", "Advanced", "Bonus"];
   const byLevel = group("level").sort((a, b) => levelOrder.indexOf(a.label) - levelOrder.indexOf(b.label));
   const byTopic = group("topic").sort((a, b) => b.pct - a.pct);
   const overallPct = pct(per.reduce((t, p) => t + p.correct, 0), playerCount * QUESTIONS.length);
