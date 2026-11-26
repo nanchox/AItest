@@ -6,7 +6,7 @@ export const POST = handle(async (req: Request) => {
   const body = await readJson(req);
   if (!checkPassword(body.password)) {
     await new Promise((r) => setTimeout(r, 600)); // slow down guessing
-    return NextResponse.json({ error: "Wrong password." }, { status: 401, headers: noStore });
+    return NextResponse.json({ error: "Wrong password.", code: "wrong_password" }, { status: 401, headers: noStore });
   }
   const c = makeSessionCookie();
   const res = NextResponse.json({ ok: true }, { headers: noStore });

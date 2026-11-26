@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import type { Lang } from "../i18n";
 import type { Answer, Game, Player } from "../types";
 import type { GamePatch, Store } from "./types";
 
@@ -18,7 +19,7 @@ const iso = (v: number | null | undefined) => (v === null || v === undefined ? n
 /* eslint-disable @typescript-eslint/no-explicit-any */
 function toGame(r: any): Game {
   return {
-    id: r.id, code: r.code, title: r.title, phase: r.phase, status: r.status, round: r.round, current_q: r.current_q,
+    id: r.id, code: r.code, title: r.title, lang: r.lang === "es" ? "es" : "en", phase: r.phase, status: r.status, round: r.round, current_q: r.current_q,
     question_started_at: ms(r.question_started_at), question_ends_at: ms(r.question_ends_at),
     finished_at: ms(r.finished_at), created_at: ms(r.created_at)!,
   };
@@ -38,8 +39,8 @@ function fail(error: { message: string } | null, what: string): asserts error is
 }
 
 export const supabaseStore: Store = {
-  async createGame(code, title) {
-    const { data, error } = await sb().from("games").insert({ code, title }).select().single();
+  async createGame(code: string, title: string | null, lang: Lang) {
+    const { data, error } = await sb().from("games").insert({ code, title, lang }).select().single();
     if (error?.code === "23505") return null;
     fail(error, "createGame");
     return toGame(data);

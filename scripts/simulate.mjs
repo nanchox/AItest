@@ -36,11 +36,12 @@ r = await call("/api/host/games", { method: "GET" });
 ok(r.status === 401, "host API without cookie is rejected");
 
 console.log("== Create game");
-r = await call("/api/host/games", { body: { title: "Simulation" }, host: true });
+r = await call("/api/host/games", { body: { title: "Simulation", lang: "es" }, host: true });
 ok(r.status === 200 && /^[A-Z0-9]{5}$/.test(r.data.code), `game created with 5-char code (${r.data.code})`);
 const code = r.data.code;
 const host = (path, body) => call(`/api/host/games/${code}${path}`, { body, host: true });
 const hostState = async () => (await call(`/api/host/games/${code}/state`, { host: true })).data;
+ok((await hostState()).lang === "es", "game was created in Spanish");
 
 console.log("== Joining");
 const bots = [];
@@ -50,7 +51,7 @@ await Promise.all(Array.from({ length: BOTS }, async (_, i) => {
 }));
 ok(bots.length === BOTS, `${BOTS} players joined`);
 r = await call("/api/join", { body: { code, name: "bot1", avatar: "fox" } });
-ok(r.status === 409, "duplicate name (case-insensitive) is rejected");
+ok(r.status === 409 && r.data.code === "name_taken", "duplicate name (case-insensitive) is rejected with an error code");
 r = await call("/api/join", { body: { code, name: "Nobody", avatar: "dragon" } });
 ok(r.status === 400, "invalid avatar is rejected");
 r = await call("/api/join", { body: { code, name: "x".repeat(40), avatar: "fox" } });
@@ -84,6 +85,19 @@ for (let q = 0; q < 10; q++) {
   ok(r.data.correctIndex === undefined && r.data.explanation === undefined, "host state does not leak the answer while answering");
 
   const ps = await playerState(bots[0]);
+  if (q === 0) {
+    ok(ps.lang === "es" && ps.question.options.includes("Un chatbot que entiende el lenguaje natural"), "phones receive the options in Spanish");
+    ok((await hostState()).question.text.startsWith("¿Cuál de los siguientes"), "host receives the question text in Spanish");
+    const bad = await host("/language", { lang: "fr" });
+    ok(bad.status === 400 && bad.data.code === "bad_lang", "unknown language is rejected");
+    const sw = await host("/language", { lang: "en" });
+    ok(sw.data.lang === "en" && sw.data.question.text.startsWith("Which of the following"), "host can switch to English mid-question");
+    const psEn = await playerState(bots[0]);
+    ok(psEn.lang === "en" && psEn.question.options.includes("A chatbot that understands natural language"), "phones follow the switch to English");
+    const noauth = await call(`/api/host/games/${code}/language`, { body: { lang: "es" } });
+    ok(noauth.status === 401, "changing language requires host login");
+    await host("/language", { lang: "es" });
+  }
   ok(ps.question?.options?.length === nOpts && ps.result === undefined && !JSON.stringify(ps).includes("correctIndex"), "player state has options but no correct answer");
 
   // Bots answer with random delays; remember choices to verify scoring later.
@@ -116,6 +130,7 @@ for (let q = 0; q < 10; q++) {
   r = await host("/advance", { action: "reveal" });
   const rv = r.data;
   ok(rv.phase === "reveal" && Number.isInteger(rv.correctIndex) && rv.explanation, "reveal shows correct answer + explanation");
+  if (q === 0) ok(rv.explanation.startsWith("La IA es software"), "reveal explanation is in Spanish");
   ok(rv.distribution.reduce((a, b) => a + b, 0) === BOTS, "distribution sums to the number of players");
   const again = await host("/advance", { action: "reveal" });
   ok(again.data.phase === "reveal", "double reveal is idempotent");

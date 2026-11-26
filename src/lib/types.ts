@@ -1,9 +1,12 @@
+import type { Lang } from "./i18n";
+
 export type Phase = "lobby" | "question" | "answering" | "reveal" | "leaderboard" | "podium";
 
 export interface Game {
   id: string;
   code: string;
   title: string | null;
+  lang: Lang;
   phase: Phase;
   status: "active" | "archived";
   round: number;
@@ -67,6 +70,7 @@ export interface BaseState {
   serverNow: number;
   code: string;
   title: string | null;
+  lang: Lang;
   phase: Phase;
   round: number;
   qIndex: number;

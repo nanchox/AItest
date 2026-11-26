@@ -1,30 +1,32 @@
 "use client";
 import { stylesFor } from "@/components/answers";
+import type { Lang, T } from "@/lib/i18n";
 import type { HostState } from "@/lib/types";
 
-export function QuestionStage({ state, remainingMs }: { state: HostState; remainingMs: number }) {
+export function QuestionStage({ state, remainingMs, t, lang }: { state: HostState; remainingMs: number; t: T; lang: Lang }) {
   const q = state.question!;
   const styles = stylesFor(q.type);
   const answering = state.phase === "answering";
   const reveal = state.phase === "reveal";
   const total = (state.distribution ?? []).reduce((a, b) => a + b, 0);
   const secs = Math.ceil(remainingMs / 1000);
+  void lang;
   const pct = Math.max(0, Math.min(100, (remainingMs / state.timeLimitMs) * 100));
 
   return (
     <div className="flex flex-1 flex-col gap-5">
       <div className="flex items-center gap-4">
-        <span className="rounded-full bg-white/15 px-4 py-1 text-lg font-extrabold">Question {q.index + 1} of {q.total}</span>
-        <span className="rounded-full bg-brand-200 px-4 py-1 text-lg font-extrabold text-brand-900">{q.level === "Bonus" ? "⭐ Bonus" : q.level}</span>
-        <span className="text-lg font-bold text-brand-200">{q.topic}</span>
+        <span className="rounded-full bg-white/15 px-4 py-1 text-lg font-extrabold">{t("p.qOf", { n: q.index + 1, total: q.total })}</span>
+        <span className="rounded-full bg-brand-200 px-4 py-1 text-lg font-extrabold text-brand-900">{t(`level.${q.level}`)}</span>
+        <span className="text-lg font-bold text-brand-200">{t(`topic.${q.topic}`)}</span>
         <div className="flex-1" />
         {answering && (
           <div className="flex items-center gap-4">
-            <span className="text-xl font-bold text-brand-200">{state.answered}/{state.playerCount} answered</span>
+            <span className="text-xl font-bold text-brand-200">{t("q.answered", { n: state.answered, total: state.playerCount })}</span>
             <span
               className={`flex h-20 w-20 items-center justify-center rounded-full text-5xl font-black tabular-nums ring-4 ${secs <= 5 ? "animate-tick bg-ans-red ring-white" : "bg-white text-brand-900 ring-brand-200"}`}
               role="timer"
-              aria-label={`${secs} seconds left`}
+              aria-label={t("p.secsLeft", { n: secs })}
             >
               {secs}
             </span>
@@ -56,7 +58,7 @@ export function QuestionStage({ state, remainingMs }: { state: HostState; remain
             >
               <span className="text-5xl" aria-hidden>{s.shape}</span>
               <span className="flex-1 text-[clamp(1.2rem,2.2vw,2.4rem)] font-extrabold leading-tight">{text}</span>
-              {isCorrect && <span className="flex h-14 w-14 items-center justify-center rounded-full bg-success text-3xl text-white" aria-label="Correct answer">✓</span>}
+              {isCorrect && <span className="flex h-14 w-14 items-center justify-center rounded-full bg-success text-3xl text-white" aria-label={t("q.correctAria")}>✓</span>}
               {reveal && (
                 <span className="text-right">
                   <span className="block text-4xl font-black tabular-nums">{count}</span>
@@ -71,7 +73,7 @@ export function QuestionStage({ state, remainingMs }: { state: HostState; remain
 
       {reveal && state.explanation && (
         <p className="animate-rise rounded-2xl bg-white/15 px-6 py-4 text-[clamp(1rem,1.7vw,1.7rem)] font-semibold leading-snug ring-1 ring-white/25">
-          <span className="mr-2 font-black text-brand-200">Why?</span>
+          <span className="mr-2 font-black text-brand-200">{t("q.why")}</span>
           {state.explanation}
         </p>
       )}

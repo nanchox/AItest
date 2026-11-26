@@ -1,12 +1,23 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { isLang, makeT, type Lang, type T } from "./i18n";
 import type { BaseState } from "./types";
 
 export class ApiError extends Error {
-  constructor(public status: number, message: string) {
+  constructor(public status: number, message: string, public code: string = "") {
     super(message);
   }
+}
+
+/** The error text in the user's language (falls back to the server's English message). */
+export function errMsg(t: T, e: unknown): string {
+  if (e instanceof ApiError) {
+    const key = `err.${e.code || (e.status === 0 ? "conn" : "generic")}`;
+    const m = t(key);
+    return m === key ? e.message : m;
+  }
+  return t("err.conn");
 }
 
 export async function api<T = unknown>(url: string, opts: { method?: string; body?: unknown; headers?: Record<string, string> } = {}): Promise<T> {
@@ -17,7 +28,10 @@ export async function api<T = unknown>(url: string, opts: { method?: string; bod
     cache: "no-store",
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new ApiError(res.status, (data as { error?: string }).error ?? "Request failed.");
+  if (!res.ok) {
+    const d = data as { error?: string; code?: string };
+    throw new ApiError(res.status, d.error ?? "Request failed.", d.code ?? "");
+  }
   return data as T;
 }
 
@@ -66,7 +80,7 @@ export function useGameState<T extends BaseState>(code: string, { url, headers, 
       stateRef.current = s;
       setStored({ url, state: s, error: null });
     } catch (e) {
-      const err = e instanceof ApiError ? e : new ApiError(0, "Connection problem. Retrying…");
+      const err = e instanceof ApiError ? e : new ApiError(0, "Connection problem. Retrying…", "conn");
       setStored((prev) => ({ url, state: prev.url === url ? prev.state : null, error: err }));
     } finally {
       busy.current = false;
@@ -124,3 +138,31 @@ export function useServerNow(offset: React.RefObject<number>, active: boolean, e
   }, [active, offset, everyMs]);
   return now;
 }
+
+const UI_LANG_KEY = "aiquiz:ui-lang";
+
+/** Language for screens that don't belong to a game yet (home, host login/list). Remembered per browser. */
+export function useUiLang(): [Lang, (l: Lang) => void] {
+  const [lang, setLangState] = useState<Lang>("en");
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(UI_LANG_KEY);
+      if (isLang(saved)) return setLangState(saved);
+    } catch {}
+    setLangState(navigator.language?.toLowerCase().startsWith("es") ? "es" : "en");
+  }, []);
+  const setLang = useCallback((l: Lang) => {
+    setLangState(l);
+    try { localStorage.setItem(UI_LANG_KEY, l); } catch {}
+  }, []);
+  return [lang, setLang];
+}
+
+/** Keeps <html lang> in sync with the language being shown. */
+export function useDocumentLang(lang: Lang) {
+  useEffect(() => {
+    document.documentElement.lang = lang;
+  }, [lang]);
+}
+
+export { makeT };

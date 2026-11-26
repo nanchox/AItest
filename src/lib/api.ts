@@ -24,15 +24,15 @@ export function handle<A extends unknown[]>(fn: (...args: A) => Promise<Response
     try {
       return await fn(...args);
     } catch (e) {
-      if (e instanceof HttpError) return json({ error: e.message }, e.status);
+      if (e instanceof HttpError) return json({ error: e.message, code: e.code }, e.status);
       console.error(e);
-      return json({ error: "Something went wrong. Please try again." }, 500);
+      return json({ error: "Something went wrong. Please try again.", code: "server" }, 500);
     }
   };
 }
 
 export function requireHost(req: Request) {
-  if (!isHostRequest(req)) throw new HttpError(401, "Host login required.");
+  if (!isHostRequest(req)) throw new HttpError(401, "host_required");
 }
 
 export type Ctx = { params: Promise<{ code: string }> };

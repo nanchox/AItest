@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import type { Lang } from "../i18n";
 import type { Answer, Game, NewAnswer, Player } from "../types";
 import type { GamePatch, Store } from "./types";
 
@@ -13,10 +14,10 @@ const g = globalThis as unknown as { __quizMemoryDb?: Db };
 const db: Db = (g.__quizMemoryDb ??= { games: [], players: [], answers: [] });
 
 export const memoryStore: Store = {
-  async createGame(code, title) {
+  async createGame(code: string, title: string | null, lang: Lang) {
     if (db.games.some((x) => x.code === code)) return null;
     const game: Game = {
-      id: randomUUID(), code, title, phase: "lobby", status: "active", round: 1, current_q: -1,
+      id: randomUUID(), code, title, lang, phase: "lobby", status: "active", round: 1, current_q: -1,
       question_started_at: null, question_ends_at: null, finished_at: null, created_at: Date.now(),
     };
     db.games.push(game);

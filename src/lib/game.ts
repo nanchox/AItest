@@ -1,6 +1,7 @@
 import "server-only";
-import { QUESTIONS, type Question } from "@/data/questions";
+import { localize, QUESTIONS, type Question } from "@/data/questions";
 import { generateCode, generateToken, isValidCode } from "./code";
+import { makeT, type Lang } from "./i18n";
 import { AVATAR_KEYS } from "./avatars";
 import { validateName } from "./names";
 import { GRACE_MS, LEADERBOARD_EVERY, pointsFor, streakAt, streakBonus } from "./scoring";
@@ -13,31 +14,33 @@ import type {
 
 export const TOTAL = QUESTIONS.length;
 
+/** `code` maps to an "err.*" key in i18n so each client can show the message in its own language. */
 export class HttpError extends Error {
-  constructor(public status: number, message: string) {
-    super(message);
+  constructor(public status: number, public code: string) {
+    super(makeT("en")(`err.${code}`));
   }
 }
 
 const questionAt = (i: number): Question | null => QUESTIONS[i] ?? null;
 
-function publicQuestion(i: number): PublicQuestion | null {
+function publicQuestion(i: number, lang: Lang): PublicQuestion | null {
   const q = questionAt(i);
   if (!q) return null;
-  return { index: i, total: TOTAL, level: q.level, topic: q.topic, type: q.type, text: q.text, options: q.options };
+  const l = localize(q, lang);
+  return { index: i, total: TOTAL, level: q.level, topic: q.topic, type: q.type, text: l.text, options: l.options };
 }
 
 export async function loadGame(code: string): Promise<Game> {
-  if (!isValidCode(code)) throw new HttpError(404, "Game not found.");
+  if (!isValidCode(code)) throw new HttpError(404, "game_not_found");
   const game = await getStore().getGameByCode(code);
-  if (!game) throw new HttpError(404, "Game not found.");
+  if (!game) throw new HttpError(404, "game_not_found");
   return game;
 }
 
 function base(game: Game, playerCount: number): BaseState {
   const q = questionAt(game.current_q);
   return {
-    serverNow: Date.now(), code: game.code, title: game.title, phase: game.phase, round: game.round,
+    serverNow: Date.now(), code: game.code, title: game.title, lang: game.lang, phase: game.phase, round: game.round,
     qIndex: game.current_q, total: TOTAL, startedAt: game.question_started_at, endsAt: game.question_ends_at,
     timeLimitMs: (q?.timeLimitSec ?? 20) * 1000, playerCount,
   };
@@ -45,10 +48,10 @@ function base(game: Game, playerCount: number): BaseState {
 
 /* ------------------------------------------------------------------ host actions */
 
-export async function createGame(title: string | null): Promise<Game> {
+export async function createGame(title: string | null, lang: Lang): Promise<Game> {
   const store = getStore();
   for (let i = 0; i < 10; i++) {
-    const game = await store.createGame(generateCode(), title);
+    const game = await store.createGame(generateCode(), title, lang);
     if (game) return game;
   }
   throw new Error("Could not generate a unique game code.");
@@ -65,12 +68,12 @@ export async function advance(game: Game, action: Action): Promise<Game> {
 
   if (action === "start" && game.phase === "lobby") {
     const players = await store.listPlayers(game.id);
-    if (players.length === 0) throw new HttpError(409, "Wait for at least one player to join.");
+    if (players.length === 0) throw new HttpError(409, "need_players");
     from = "lobby";
     patch = { phase: "question", current_q: 0, question_started_at: null, question_ends_at: null, finished_at: null };
   } else if (action === "open" && game.phase === "question") {
     const q = questionAt(game.current_q);
-    if (!q) throw new HttpError(409, "No such question.");
+    if (!q) throw new HttpError(409, "no_question");
     from = "question";
     patch = { phase: "answering", question_started_at: now, question_ends_at: now + q.timeLimitSec * 1000 };
   } else if (action === "reveal" && game.phase === "answering") {
@@ -103,6 +106,12 @@ export async function restartGame(game: Game, mode: "same_players" | "fresh"): P
   return updated ?? game;
 }
 
+export async function setLanguage(game: Game, lang: Lang): Promise<Game> {
+  const updated = await getStore().updateGame(game.id, { lang });
+  await notifyGame(game.code);
+  return updated ?? game;
+}
+
 export async function kickPlayer(game: Game, playerId: string): Promise<void> {
   const store = getStore();
   const p = await store.getPlayer(playerId);
@@ -120,14 +129,14 @@ export async function archiveGame(game: Game): Promise<void> {
 export async function joinGame(code: string, rawName: unknown, avatar: unknown) {
   const game = await loadGame(code);
   const v = validateName(rawName);
-  if (!v.ok) throw new HttpError(400, v.error);
-  if (typeof avatar !== "string" || !AVATAR_KEYS.includes(avatar)) throw new HttpError(400, "Pick an animal avatar.");
+  if (!v.ok) throw new HttpError(400, v.code);
+  if (typeof avatar !== "string" || !AVATAR_KEYS.includes(avatar)) throw new HttpError(400, "avatar_required");
   if (!(game.phase === "lobby" || (game.current_q === 0 && game.phase !== "podium"))) {
-    throw new HttpError(409, "This game is already in progress.");
+    throw new HttpError(409, "in_progress");
   }
   const token = generateToken();
   const res = await getStore().addPlayer({ game_id: game.id, name: v.name, avatar, token });
-  if (res === "duplicate") throw new HttpError(409, "That name is already taken. Try another one.");
+  if (res === "duplicate") throw new HttpError(409, "name_taken");
   await notifyGame(game.code);
   return { playerId: res.id, token, name: res.name, avatar: res.avatar };
 }
@@ -143,7 +152,7 @@ export async function submitAnswer(code: string, playerId: unknown, token: unkno
   const store = getStore();
   const game = await loadGame(code);
   const player = await authPlayer(game, playerId, token);
-  if (!player) throw new HttpError(401, "Please rejoin the game.");
+  if (!player) throw new HttpError(401, "rejoin");
   const q = questionAt(game.current_q);
   const now = Date.now();
   if (
@@ -151,10 +160,10 @@ export async function submitAnswer(code: string, playerId: unknown, token: unkno
     game.question_started_at === null || game.question_ends_at === null ||
     now > game.question_ends_at + GRACE_MS
   ) {
-    throw new HttpError(409, "Time is up for this question.");
+    throw new HttpError(409, "time_up");
   }
-  if (typeof choice !== "number" || !Number.isInteger(choice) || choice < 0 || choice >= q.options.length) {
-    throw new HttpError(400, "Invalid choice.");
+  if (typeof choice !== "number" || !Number.isInteger(choice) || choice < 0 || choice >= q.options.en.length) {
+    throw new HttpError(400, "invalid_choice");
   }
   const limitMs = q.timeLimitSec * 1000;
   const elapsed = Math.min(Math.max(now - game.question_started_at, 0), limitMs);
@@ -170,7 +179,7 @@ export async function submitAnswer(code: string, playerId: unknown, token: unkno
     game_id: game.id, player_id: player.id, player_name: player.name, player_avatar: player.avatar,
     round: game.round, question_index: game.current_q, choice, is_correct: isCorrect, elapsed_ms: elapsed, points,
   });
-  if (!inserted) throw new HttpError(409, "You already answered this question.");
+  if (!inserted) throw new HttpError(409, "already_answered");
   return { locked: true };
 }
 
@@ -182,7 +191,7 @@ export async function hostState(game: Game): Promise<HostState> {
   const s: HostState = {
     ...base(game, players.length),
     players: players.map((p) => ({ id: p.id, name: p.name, avatar: p.avatar })),
-    question: game.phase === "question" || game.phase === "answering" || game.phase === "reveal" ? publicQuestion(game.current_q) : null,
+    question: game.phase === "question" || game.phase === "answering" || game.phase === "reveal" ? publicQuestion(game.current_q, game.lang) : null,
     answered: 0,
   };
   const needsQuestionAnswers = game.phase === "answering" || game.phase === "reveal";
@@ -196,8 +205,8 @@ export async function hostState(game: Game): Promise<HostState> {
   if (game.phase === "reveal") {
     const q = questionAt(game.current_q)!;
     s.correctIndex = q.correct;
-    s.explanation = q.explanation;
-    const dist = q.options.map(() => 0);
+    s.explanation = localize(q, game.lang).explanation;
+    const dist = q.options.en.map(() => 0);
     for (const a of answers) if (a.question_index === game.current_q && a.choice < dist.length) dist[a.choice]++;
     s.distribution = dist;
   }
@@ -208,7 +217,7 @@ export async function hostState(game: Game): Promise<HostState> {
       : standings;
     s.leaderboard = s.standings.slice(0, 5);
   }
-  if (game.phase === "podium") s.snapshot = buildSnapshot(players.length, answers);
+  if (game.phase === "podium") s.snapshot = buildSnapshot(players.length, answers, game.lang);
   return s;
 }
 
@@ -227,7 +236,7 @@ export async function playerState(game: Game, playerId: unknown, token: unknown)
 
   s.question = { index: game.current_q, total: TOTAL, level: q.level, type: q.type };
   if (game.phase === "answering") {
-    s.question.options = q.options; // texts only, never the correct index
+    s.question.options = localize(q, game.lang).options; // texts only, never the correct index
     const mine = await store.listAnswers(game.id, game.round, { playerId: player.id, q: game.current_q });
     s.myChoice = mine[0]?.choice ?? null;
     return s;
@@ -248,7 +257,7 @@ export async function playerState(game: Game, playerId: unknown, token: unknown)
     s.myChoice = myAns?.choice ?? null;
     s.result = {
       myChoice: myAns?.choice ?? null, isCorrect: myAns?.is_correct ?? false, points: myAns?.points ?? 0,
-      streak: streakAt(map, game.current_q), correctIndex: q.correct, explanation: q.explanation, options: q.options,
+      streak: streakAt(map, game.current_q), correctIndex: q.correct, explanation: localize(q, game.lang).explanation, options: localize(q, game.lang).options,
     };
   }
   if (game.phase === "podium") {
@@ -261,12 +270,12 @@ export async function playerState(game: Game, playerId: unknown, token: unknown)
 
 const pct = (num: number, den: number) => (den === 0 ? 0 : Math.round((num / den) * 100));
 
-export function buildSnapshot(playerCount: number, answers: Answer[]): Snapshot {
+export function buildSnapshot(playerCount: number, answers: Answer[], lang: Lang = "en"): Snapshot {
   const per = QUESTIONS.map((q, i) => {
     const qa = answers.filter((a) => a.question_index === i);
     const correct = qa.filter((a) => a.is_correct).length;
     const avgSec = qa.length ? Math.round((qa.reduce((t, a) => t + a.elapsed_ms, 0) / qa.length / 1000) * 10) / 10 : 0;
-    return { id: q.id, level: q.level, topic: q.topic, text: q.text, correct, pct: pct(correct, playerCount), avgSec };
+    return { id: q.id, level: q.level, topic: q.topic, text: q.text[lang], correct, pct: pct(correct, playerCount), avgSec };
   });
   const group = (key: "level" | "topic"): SnapshotRow[] => {
     const m = new Map<string, { c: number; n: number }>();

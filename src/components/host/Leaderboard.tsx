@@ -1,15 +1,16 @@
 "use client";
 import { motion } from "framer-motion";
 import { Avatar } from "@/components/ui/Avatar";
+import type { Lang, T } from "@/lib/i18n";
 import type { Standing } from "@/lib/types";
 
-export function Leaderboard({ rows, afterQuestion, total }: { rows: Standing[]; afterQuestion: number; total: number }) {
+export function Leaderboard({ rows, afterQuestion, total, t, lang }: { rows: Standing[]; afterQuestion: number; total: number; t: T; lang: Lang }) {
   const max = Math.max(1, ...rows.map((r) => r.score));
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col justify-center gap-6">
       <div className="text-center">
-        <h1 className="text-[clamp(2rem,4vw,4rem)] font-black">Leaderboard</h1>
-        <p className="text-xl font-bold text-brand-200">After question {afterQuestion + 1} of {total}</p>
+        <h1 className="text-[clamp(2rem,4vw,4rem)] font-black">{t("lb.title")}</h1>
+        <p className="text-xl font-bold text-brand-200">{t("lb.after", { n: afterQuestion + 1, total })}</p>
       </div>
       <ol className="space-y-3">
         {rows.map((r, i) => (
@@ -31,11 +32,11 @@ export function Leaderboard({ rows, afterQuestion, total }: { rows: Standing[]; 
             <Avatar avatar={r.avatar} size="md" className="relative" />
             <span className="relative flex-1 truncate text-[clamp(1.3rem,2.4vw,2.4rem)] font-extrabold">{r.name}</span>
             {r.change !== undefined && r.change !== 0 && (
-              <span className={`relative text-xl font-black ${r.change > 0 ? "text-success" : "text-amber-300"}`} aria-label={r.change > 0 ? `up ${r.change}` : `down ${-r.change}`}>
+              <span className={`relative text-xl font-black ${r.change > 0 ? "text-success" : "text-amber-300"}`} aria-label={r.change > 0 ? t("lb.up", { n: r.change }) : t("lb.down", { n: -r.change })}>
                 {r.change > 0 ? "▲" : "▼"} {Math.abs(r.change)}
               </span>
             )}
-            <span className="relative text-[clamp(1.4rem,2.6vw,2.6rem)] font-black tabular-nums">{r.score.toLocaleString()}</span>
+            <span className="relative text-[clamp(1.4rem,2.6vw,2.6rem)] font-black tabular-nums">{r.score.toLocaleString(lang)}</span>
           </motion.li>
         ))}
       </ol>

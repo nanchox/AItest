@@ -3,13 +3,13 @@ const BLOCKED = [
   "puta", "puto", "mierda", "verga", "pendejo", "pendeja", "cabron", "chinga", "culero", "coño", "joder",
 ];
 
-/** Returns a clean name, or an error message. */
-export function validateName(raw: unknown): { ok: true; name: string } | { ok: false; error: string } {
-  if (typeof raw !== "string") return { ok: false, error: "Please enter your name." };
+/** Returns a clean name, or an error code (see the "err.*" keys in i18n). */
+export function validateName(raw: unknown): { ok: true; name: string } | { ok: false; code: string } {
+  if (typeof raw !== "string") return { ok: false, code: "name_required" };
   const name = raw.replace(/\s+/g, " ").trim();
-  if (name.length < 1) return { ok: false, error: "Please enter your name." };
-  if (name.length > 16) return { ok: false, error: "Name can have at most 16 characters." };
+  if (name.length < 1) return { ok: false, code: "name_required" };
+  if (name.length > 16) return { ok: false, code: "name_long" };
   const flat = name.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z]/g, "");
-  if (BLOCKED.some((w) => flat.includes(w))) return { ok: false, error: "Please choose a different name." };
+  if (BLOCKED.some((w) => flat.includes(w))) return { ok: false, code: "name_blocked" };
   return { ok: true, name };
 }

@@ -39,9 +39,16 @@ BASE=http://localhost:3100 BOTS=45 node scripts/simulate.mjs   # full game with 
 - Live updates: the server publishes a Supabase Realtime *broadcast* on every change; clients refetch. Clients also poll every 1.5–3 s as a safety net.
 - Host keys: `Space` = next step, `F` = fullscreen. The host screen reveals automatically when time is up or everyone answered.
 
+## Languages (English / Español)
+
+Every game has a language, chosen when the host creates it (**Game language: EN | ES**) and switchable at any time with the
+**EN | ES** toggle on the presenter screen. It changes the questions, options, explanations and the whole interface, on the projector
+and on every phone, within a second or two. CSV exports always use English column names.
+Database: run `supabase/migrations/0002_game_language.sql` (adds `games.lang`).
+
 ## Editing the questions
 
-Edit [`src/data/questions.ts`](src/data/questions.ts): `type` is `"multiple"` (4 options) or `"truefalse"` (`["True", "False"]`), `correct` is the option index.
+Edit [`src/data/questions.ts`](src/data/questions.ts). `text`, `options` and `explanation` have an `en` and an `es` version (same option order); `correct` is the option index. Interface texts live in [`src/lib/i18n.ts`](src/lib/i18n.ts).
 
 ## Troubleshooting
 

@@ -256,6 +256,8 @@ Están pensadas para **diagnosticar** al equipo, con foco en **usuarios de IA (n
 
 Las 10 preguntas son de opción múltiple (las dos de verdadero/falso ya no están). El contenido es el que proporcionó el equipo; solo se **reordenaron las opciones** para repartir la respuesta correcta entre A, B, C y D (en la lista original 6 de 10 eran "B", y quien eligiera siempre B habría acertado el 60 %). Las explicaciones del reveal las redactó Claude.
 
+**Idiomas:** cada juego tiene un idioma (EN/ES) que el anfitrión elige al crearlo y puede cambiar en cualquier momento; afecta preguntas, opciones, explicaciones e interfaz, en el proyector y en los teléfonos.
+
 **Dos grupos:** cada grupo es una sesión independiente con su propio código (`/host` → *Group 1* / *Group 2* → Create game). Se pueden jugar uno después del otro o en paralelo, y cada uno tiene su propio podio, Team snapshot y CSV.
 
 Cada pregunta trae una explicación de 1–2 frases que se muestra en el reveal. **Revísalas antes del evento:** si quieres cambiar alguna pregunta, basta con editar ese archivo.

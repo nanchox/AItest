@@ -1,12 +1,13 @@
+import type { Lang } from "../i18n";
 import type { Answer, Game, NewAnswer, Phase, Player } from "../types";
 
 export type GamePatch = Partial<
-  Pick<Game, "title" | "phase" | "status" | "round" | "current_q" | "question_started_at" | "question_ends_at" | "finished_at">
+  Pick<Game, "title" | "lang" | "phase" | "status" | "round" | "current_q" | "question_started_at" | "question_ends_at" | "finished_at">
 >;
 
 export interface Store {
   /** Returns null when the code is already taken. */
-  createGame(code: string, title: string | null): Promise<Game | null>;
+  createGame(code: string, title: string | null, lang: Lang): Promise<Game | null>;
   getGameByCode(code: string): Promise<Game | null>;
   listGames(): Promise<(Game & { player_count: number })[]>;
   /** When `expectPhase` is given the update only applies if the game is still in that phase. */
